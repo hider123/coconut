@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>戶號坪數查詢 (優化版)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 使用 Google Fonts 的 'Noto Sans TC' 來提供更美觀的中文字體 */
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap');
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+<div class="w-full max-w-md mx-auto bg-white rounded-xl shadow-lg p-8 transform transition-all duration-300">
+    <div class="text-center">
+        <h1 class="text-3xl font-bold text-blue-600 mb-4">戶號坪數查詢系統</h1>
+        <p class="text-gray-500 mb-8">請從下方的下拉選單中選擇戶號與車位。</p>
+    </div>
+    
+    <!-- 戶號下拉式選單 -->
+    <div class="relative mb-6">
+        <label for="householdSelector" class="block mb-2 text-sm font-medium text-gray-700">戶號選擇</label>
+        <select id="householdSelector" onchange="updateResult()" class="block w-full px-4 py-3 text-base text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="">-- 請選擇戶號 --</option>
+        </select>
+        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 top-7">
+            <!-- 下拉箭頭圖示 -->
+            <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+        </div>
+    </div>
+    
+    <!-- 車位下拉式選單 -->
+    <div class="relative">
+        <label for="parkingSelector" class="block mb-2 text-sm font-medium text-gray-700">車位選項</label>
+        <select id="parkingSelector" onchange="updateResult()" class="block w-full px-4 py-3 text-base text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="">-- 請選擇車位 --</option>
+            <option value="none">無車位</option>
+            <option value="standard">標準車位(10坪)</option>
+            <option value="tandem">子母車位(15坪)</option>
+            <option value="multiple">雙車位以上(20坪+)</option>
+        </select>
+        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 top-7">
+             <!-- 下拉箭頭圖示 -->
+            <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+        </div>
+    </div>
+    
+    <!-- 顯示結果的區域 -->
+    <div id="result" class="mt-8 text-left bg-gray-50 rounded-lg p-6 min-h-[160px] transition-all duration-300">
+        <div id="result-title" class="flex items-center text-xl font-bold text-gray-800 mb-4">
+            <svg class="w-6 h-6 text-green-500 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>查詢結果：</span>
+        </div>
+        <div id="result-content" class="space-y-3 hidden">
+            <p id="result-area" class="flex items-center text-lg text-gray-700 font-semibold"></p>
+            <p id="result-parking" class="flex items-center text-lg text-gray-700"></p>
+            <hr class="my-2 border-gray-200"/>
+            <div id="result-plan1" class="text-lg text-gray-700"></div>
+            <div id="result-plan2" class="text-lg text-gray-700"></div>
+            <p id="result-comparison" class="flex items-center text-lg text-gray-700"></p>
+        </div>
+         <p id="result-placeholder" class="text-gray-500">請從下拉選單中選擇以查看結果。</p>
+    </div>
+    
+    <!-- 新增的計價公式區塊 -->
+    <div class="mt-8 text-left bg-blue-50 rounded-lg p-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">計價公式參考：</h2>
+        <div class="space-y-4 text-gray-700">
+            <div>
+                <h3 class="font-bold">方案一。每坪37+車30：</h3>
+                <p class="pl-4">(大公 + 小公 + 37) × 戶坪 × 6</p>
+                <p class="pl-4">+ (車坪 ÷ 10 × 300 × 6)</p>
+                <p class="pl-4">+ 機車格</p>
+            </div>
+            <div>
+                <h3 class="font-bold">方案二。每坪35+車35：</h3>
+                <p class="pl-4">(大公 + 小公 + 35) × 戶坪 × 6</p>
+                <p class="pl-4">+ (車坪 ÷ 10 × 350 × 6)</p>
+                <p class="pl-4">+ 機車格</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 將所有的戶號與坪數資料儲存在一個物件中
+    const data = {
+        "A1-2": "39.11", "A1-3": "38.85", "A1-4": "38.85", "A1-5": "38.85", "A1-6": "38.85", "A1-7": "38.85",
+        "A1-8": "38.85", "A1-9": "38.85", "A1-10": "38.85", "A1-11": "38.85", "A1-12": "38.85", "A1-13": "38.85",
+        "A1-14": "38.85", "A2-2": "41.35", "A2-3": "41.35", "A2-4": "41.35", "A2-5": "41.35", "A2-6": "41.35",
+        "A2-7": "41.35", "A2-8": "41.35", "A2-9": "41.35", "A2-10": "41.35", "A2-11": "41.35", "A2-12": "41.35",
+        "A2-13": "41.35", "A2-14": "41.35", "A3-2": "17.84", "A3-3": "17.84", "A3-4": "17.84", "A3-5": "17.84",
+        "A3-6": "17.84", "A3-7": "17.84", "A3-8": "17.84", "A3-9": "17.84", "A3-10": "17.84", "A3-11": "17.84",
+        "A3-12": "17.84", "A3-13": "17.84", "A3-14": "17.84", "A5-2": "29.43", "A5-3": "29.43", "A5-4": "29.43",
+        "A5-5": "29.43", "A5-6": "29.43", "A5-7": "29.43", "A5-8": "29.43", "A5-9": "29.43", "A5-10": "29.43",
+        "A5-11": "29.43", "A5-12": "29.43", "A5-13": "29.43", "A5-14": "29.43", "A6-2": "29.54", "A6-3": "29.54",
+        "A6-4": "29.54", "A6-5": "29.54", "A6-6": "29.54", "A6-7": "29.54", "A6-8": "29.54", "A6-9": "29.54",
+        "A6-10": "29.54", "A6-11": "29.54", "A6-12": "29.54", "A6-13": "29.54", "A6-14": "29.54",
+        "B1-2": "29.75", "B1-3": "29.75", "B1-4": "29.75", "B1-5": "29.75", "B1-6": "29.75", "B1-7": "29.75",
+        "B1-8": "29.75", "B1-9": "29.75", "B1-10": "29.75", "B1-11": "29.75", "B1-12": "29.75", "B1-13": "29.75",
+        "B1-14": "29.75", "B2-2": "35.02", "B2-3": "35.02", "B2-4": "35.02", "B2-5": "35.02", "B2-6": "35.02",
+        "B2-7": "35.02", "B2-8": "35.02", "B2-9": "35.02", "B2-10": "35.02", "B2-11": "35.02", "B2-12": "35.02",
+        "B2-13": "35.02", "B2-14": "35.02", "B3-2": "32.06", "B3-3": "32.06", "B3-4": "32.06", "B3-5": "32.06",
+        "B3-6": "32.06", "B3-7": "32.06", "B3-8": "32.06", "B3-9": "32.06", "B3-10": "32.06", "B3-11": "32.06",
+        "B3-12": "32.06", "B3-13": "32.06", "B3-14": "32.06", "B5-2": "32.06", "B5-3": "32.06", "B5-4": "32.06",
+        "B5-5": "32.06", "B5-6": "32.06", "B5-7": "32.06", "B5-8": "32.06", "B5-9": "32.06", "B5-10": "32.06",
+        "B5-11": "32.06", "B5-12": "32.06", "B5-13": "32.06", "B5-14": "32.06", "B6-2": "37.12", "B6-3": "37.12",
+        "B6-4": "37.12", "B6-5": "37.12", "B6-6": "37.12", "B6-7": "37.12", "B6-8": "37.12", "B6-9": "37.12",
+        "B6-10": "37.12", "B6-11": "37.12", "B6-12": "37.12", "B6-13": "37.12", "B6-14": "37.12", "B7-1": "27.47",
+        "B7-2": "33.8", "B7-3": "33.8", "B7-4": "33.8", "B7-5": "33.8", "B7-6": "33.8", "B7-7": "33.8",
+        "B7-8": "33.8", "B7-9": "33.8", "B7-10": "33.8", "B7-11": "33.8", "B7-12": "33.8", "B7-13": "33.8",
+        "B7-14": "33.8", "C1-2": "17.24", "C1-3": "17.24", "C1-4": "47.96", "C1-5": "47.96", "C1-6": "47.96",
+        "C1-7": "47.96", "C1-8": "17.24", "C1-9": "47.96", "C1-10": "47.96", "C1-11": "47.96", "C1-12": "47.96",
+        "C1-13": "47.96", "C1-14": "29.13", "C2-2": "17.86", "C2-3": "17.86", "C2-4": "45.59", "C2-5": "17.86",
+        "C2-6": "17.86", "C2-7": "45.59", "C2-8": "45.59", "C2-9": "45.59", "C2-10": "45.59", "C2-11": "45.59",
+        "C2-12": "17.86", "C2-13": "45.59", "C2-14": "29.98", "C3-2": "27.73", "C3-3": "27.73", "C3-5": "27.73",
+        "C3-6": "27.73", "C3-12": "27.73", "C5-2": "30.72", "C5-3": "30.72", "C5-8": "30.72", "C6-2": "30.72",
+        "C6-3": "30.72", "C6-4": "48", "C6-5": "30.72", "C6-6": "30.72", "C6-7": "30.72", "C6-8": "48", "C6-9": "48",
+        "C6-10": "48", "C6-11": "48", "C6-12": "30.72", "C6-13": "30.72", "C7-2": "27.36", "C7-3": "27.36",
+        "C7-4": "27.36", "C7-5": "27.36", "C7-6": "27.36", "C7-7": "27.36", "C7-8": "27.36", "C7-9": "44.02",
+        "C7-10": "27.36", "C7-11": "44.02", "C7-12": "27.36", "C7-13": "27.36", "C7-14": "28.22",
+        "C8-2": "16.66", "C8-3": "16.66", "C8-4": "16.66", "C8-5": "16.66", "C8-6": "16.66", "C8-7": "16.66",
+        "C8-8": "16.66", "C8-10": "16.66", "C8-12": "16.66", "C8-13": "16.66", "C9-2": "17.28", "C9-3": "17.28",
+        "C9-5": "17.28", "C9-6": "17.28", "C9-7": "17.28", "C9-11": "0", "C9-12": "17.28", "C9-13": "17.28",
+        "C9-14": "29.17", "D1-1": "38.57", "D1-2": "38.33", "D1-3": "37.87", "D1-4": "37.87", "D1-5": "37.87",
+        "D1-6": "37.87", "D1-7": "37.87", "D1-8": "37.87", "D1-9": "37.87", "D1-10": "37.87", "D1-11": "37.87",
+        "D1-12": "37.87", "D1-13": "37.87", "D1-14": "37.87", "D2-1": "33.36", "D2-2": "33.17", "D2-3": "32.74",
+        "D2-4": "32.74", "D2-5": "32.74", "D2-6": "32.74", "D2-7": "32.74", "D2-8": "32.74", "D2-9": "32.74",
+        "D2-10": "32.74", "D2-11": "32.74", "D2-12": "32.74", "D2-13": "32.74", "D2-14": "32.74",
+        "D3-1": "36.05", "D3-2": "36.4", "D3-3": "36.09", "D3-4": "36.09", "D3-5": "36.09", "D3-6": "36.09",
+        "D3-7": "36.09", "D3-8": "36.09", "D3-9": "36.09", "D3-10": "36.09", "D3-11": "36.09", "D3-12": "36.09",
+        "D3-13": "36.09", "D3-14": "36.09", "D5-1": "41.69", "D5-2": "41.69", "D5-3": "41.69", "D5-4": "41.69",
+        "D5-5": "41.69", "D5-6": "41.69", "D5-7": "41.69", "D5-8": "41.69", "D5-9": "41.69", "D5-10": "41.69",
+        "D5-11": "41.69", "D5-12": "41.69", "D5-13": "41.69", "D5-14": "41.69", "E1-1": "59.36", "E1-2": "59.36",
+        "E1-3": "59.36", "E1-4": "59.36", "E1-5": "59.36", "E1-6": "59.36", "E1-7": "59.36", "E1-8": "59.36",
+        "E1-9": "59.36", "E1-10": "59.36", "E1-11": "59.36", "E1-12": "59.36", "E1-13": "59.36", "E1-14": "59.36",
+        "E2-1": "60.2", "E2-2": "60.2", "E2-3": "60.2", "E2-4": "60.2", "E2-5": "60.2", "E2-6": "60.2", "E2-7": "60.2",
+        "E2-8": "60.2", "E2-9": "60.2", "E2-10": "60.2", "E2-11": "60.2", "E2-12": "60.2", "E2-13": "60.2",
+        "E2-14": "60.2", "S1-1": "24.31", "S2-1": "12.35", "S3-1": "13.03", "S5-1": "15.14", "S6-1": "15.14",
+        "S7-1": "15.86", "S8-1": "12.35", "S9-1": "22.17", "T1-1": "21.25", "T2-1": "20.39", "T3-1": "24.08",
+        "T5-1": "28.86", "T6-1": "28.86", "T7-1": "26.91", "T8-1": "33.34"
+    };
+
+    // 車位對應的坪數
+    const parkingAreas = {
+        "none": 0,
+        "standard": 10,
+        "tandem": 15,
+        "multiple": 20
+    };
+
+    // 對戶號進行自然排序
+    const sortedHouseholds = Object.keys(data).sort((a, b) => 
+        a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
+    );
+
+    window.onload = function() {
+        const selector = document.getElementById('householdSelector');
+        sortedHouseholds.forEach(household => {
+            const option = document.createElement('option');
+            option.value = household;
+            option.textContent = household;
+            selector.appendChild(option);
+        });
+        updateResult();
+    };
+
+    function updateResult() {
+        const householdSelector = document.getElementById('householdSelector');
+        const parkingSelector = document.getElementById('parkingSelector');
+        
+        const resultContent = document.getElementById('result-content');
+        const resultPlaceholder = document.getElementById('result-placeholder');
+        const resultArea = document.getElementById('result-area');
+        const resultParking = document.getElementById('result-parking');
+        const resultPlan1 = document.getElementById('result-plan1');
+        const resultPlan2 = document.getElementById('result-plan2');
+        const resultComparison = document.getElementById('result-comparison');
+        
+        const selectedHousehold = householdSelector.value;
+        const selectedParkingValue = parkingSelector.value;
+        const selectedParkingText = parkingSelector.options[parkingSelector.selectedIndex].text;
+
+        if (!selectedHousehold || !selectedParkingValue) {
+            resultContent.classList.add('hidden');
+            resultPlaceholder.classList.remove('hidden');
+            return;
+        }
+
+        resultContent.classList.remove('hidden');
+        resultPlaceholder.classList.add('hidden');
+
+        const area = parseFloat(data[selectedHousehold]);
+        const parkingArea = parkingAreas[selectedParkingValue];
+
+        // 顯示坪數
+        resultArea.innerHTML = `
+            <svg class="w-6 h-6 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 15.536A9.004 9.004 0 0112 15c-1.232 0-2.393.255-3.41.696m-1.956 2.356A9.004 9.004 0 015.636 18c-1.232 0-2.393-.255-3.41-.696m14.122-2.356A9.004 9.004 0 0018.364 18c1.232 0 2.393-.255-3.41-.696M12 21a9.004 9.004 0 00-9-9 9 9 0 009-9 9 9 0 009 9 9 9 0 00-9 9zm0 0c1.657 0 3-4.03 3-9s-1.343-9-3-9-3 4.03-3 9 1.343 9 3 9z"></path></svg>
+            <span>坪數：<strong class="text-black">${area.toFixed(2)}</strong> 坪</span>
+        `;
+
+        // 顯示車位
+        resultParking.innerHTML = `
+            <svg class="w-6 h-6 text-blue-400 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.125-.504 1.125-1.125V14.25m-17.25 4.5v-1.875a3.375 3.375 0 003.375-3.375h1.5a1.125 1.125 0 011.125 1.125v-1.5a3.375 3.375 0 00-3.375-3.375H3.375m15.75 9v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 003.375-3.375h1.5c1.866 0 3.375 1.509 3.375 3.375V18.75m-15.75-9H3.375a1.125 1.125 0 00-1.125 1.125v1.5c0 1.056.84 1.909 1.875 1.948V14.25m15.75-4.5h-1.5a1.125 1.125 0 00-1.125 1.125v1.5c0 1.056.84 1.909 1.875 1.948V9.75M12 15.75a3 3 0 01-3-3V9.75a3 3 0 013-3h.008a3 3 0 013 3v3a3 3 0 01-3 3h-.008z" />
+            </svg>
+            <span>車位：<strong class="text-black">${selectedParkingText}</strong></span>
+        `;
+
+        // 計算並顯示比較價格
+        // 方案一: (坪數*37*6)+(車坪/10)*300*6
+        const pricePlan1 = (area * 37 * 6) + (parkingArea / 10) * 300 * 6;
+        // 方案二: (坪數*35*6)+(車坪/10)*350*6
+        const pricePlan2 = (area * 35 * 6) + (parkingArea / 10) * 350 * 6;
+        
+        // 顯示方案一金額
+        resultPlan1.innerHTML = `
+            <div class="flex items-start">
+                <svg class="w-6 h-6 text-gray-500 mr-2 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 11.21 12.77 10.5 12 10.5s-1.536.71-2.121 1.256v1.112z" /></svg>
+                <div>
+                    <span>方案一簡算：<strong class="text-black">${Math.round(pricePlan1).toLocaleString()}</strong> 元</span>
+                    <span class="text-xs text-gray-500 block">(${area.toFixed(2)} * 37 * 6) + (${parkingArea} / 10) * 300 * 6</span>
+                </div>
+            </div>
+        `;
+
+        // 顯示方案二金額
+        resultPlan2.innerHTML = `
+            <div class="flex items-start">
+                <svg class="w-6 h-6 text-gray-500 mr-2 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 11.21 12.77 10.5 12 10.5s-1.536.71-2.121 1.256v1.112z" /></svg>
+                <div>
+                    <span>方案二簡算：<strong class="text-black">${Math.round(pricePlan2).toLocaleString()}</strong> 元</span>
+                    <span class="text-xs text-gray-500 block">(${area.toFixed(2)} * 35 * 6) + (${parkingArea} / 10) * 350 * 6</span>
+                </div>
+            </div>
+        `;
+
+        let comparisonText = '';
+        if (pricePlan1 < pricePlan2) {
+            const saving = Math.round(pricePlan2 - pricePlan1);
+            comparisonText = `較便宜：<strong class="text-green-600">方案一</strong> (省 ${saving.toLocaleString()} 元)`;
+        } else if (pricePlan2 < pricePlan1) {
+            const saving = Math.round(pricePlan1 - pricePlan2);
+            comparisonText = `較便宜：<strong class="text-green-600">方案二</strong> (省 ${saving.toLocaleString()} 元)`;
+        } else {
+            comparisonText = '兩個方案價格相同';
+        }
+        
+        resultComparison.innerHTML = `
+            <svg class="w-6 h-6 text-red-400 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.362-3.797z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.362 5.214C14.318 4.449 13.192 4 12 4s-2.318.449-3.362 1.214m6.724 0a8.287 8.287 0 00-6.724 0m6.724 0l.343.232m-7.41 0l-.343.232m0 0l-1.012 5.922a3 3 0 002.983 3.516h.001c1.656 0 3-1.343 3-3 0-.34-.056-.666-.16-0.966M9 9.6l-1.012 5.922" />
+            </svg>
+            <span>${comparisonText}</span>
+        `;
+    }
+</script>
+
+</body>
+</html>
+
